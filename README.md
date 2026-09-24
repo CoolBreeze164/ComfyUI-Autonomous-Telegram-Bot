@@ -12,6 +12,9 @@ Simple example bot workflows can be found in `examples/`. At the end of this *RE
 
 #### The pack is largely based on [ComfyUI Telegram Bot Node](https://github.com/AKharytonchyk/ComfyUI-telegram-bot-node) and [ComfyUI Telegram Suite](https://github.com/SwissCore92/comfyui-telegram-suite).
 
+_Example nodes: unified receiver and text sender._
+<img width="1961" height="794" alt="image" src="https://github.com/user-attachments/assets/c9c53672-69aa-45c5-a8e9-9ea13c689194" />
+
 ## ◀️ Unified message receiver
 
 **Telegram Listener** node adapted from [ComfyUI Telegram Bot Node](https://github.com/AKharytonchyk/ComfyUI-telegram-bot-node) and improved with additional media outputs, optimized robustness and latency, as well as new `access_mode`. The original code was redesigned to work under **Run (Instant)** mode specifically. The node has four widgets:
@@ -59,10 +62,10 @@ The receiver's polling loop and ComfyUI's built-in **Run (Instant)** queue work 
 2. One daemon thread per token long-polls Telegram and queues complete update records while ComfyUI works. The receiver consumes one ready message or waits on a condition variable, yielding a silent result on timeout or rejection. The 10-second server long-poll timeout returns early when a message arrives; it is not a 10-second delay added to messages.
 3. The workflow completes. ComfyUI's **Run (Instant)** scheduler submits the next run when the queue becomes empty. The receiver is also an output node, so it executes even when used on its own.
 
-ComfyUI remains the single queue owner. No additional requeue callback is registered, which keeps batch count 1 from becoming two competing queues. Ordinary Run consumes/waits for one message. Instant repeats until stopped. No manual seed changes, extra loop node, or disable-all-caching launch flag is needed.
+ComfyUI remains the single queue owner. No additional requeue callback is registered, which keeps batch count 1 from becoming two competing queues. Ordinary Run consumes/waits for one message. **Run (Instant)** repeats until stopped. No manual seed changes, extra loop node, or disable-all-caching launch flag is needed.
 
 Transient polling/network failures retry for **at most 90 seconds per consecutive outage**, counting request time and retry delays from the start of the first failed request. Delays begin at 0.25, 0.5, 1 and 2 seconds, then 5 seconds. A successful poll resets the outage timer; ordinary idle workflow reruns do not. Request timeouts shrink to fit the remaining budget. Telegram's `retry_after` is respected: if it exceeds the remaining budget, the listener stops when that budget expires instead of retrying early.
-At the limit, the background thread exits and logs one final stop message. The receiver surfaces the stop on its next execution, stopping Run (Instant) instead of silently starting a new retry cycle. Restore connectivity and press **Run** again to restart polling without restarting ComfyUI. ⚠️ **If the workflow was paused when the connection error occurred, the first Run reports the stored error; the following Run restarts normally.** The existing cursor and buffered messages are retained. The limit can be adjusted in `nodes/receiver.py` (parameter `RECEIVER_RETRY_TIMEOUT_SECONDS`).
+At the limit, the background thread exits and logs one final stop message. The receiver surfaces the stop on its next execution, stopping **Run (Instant)** instead of silently starting a new retry cycle. Restore connectivity and press **Run** again to restart polling without restarting ComfyUI. ⚠️ **If the workflow was paused when the connection error occurred, the first Run reports the stored error; the following Run restarts normally.** The existing cursor and buffered messages are retained. The limit can be adjusted in `nodes/receiver.py` (parameter `RECEIVER_RETRY_TIMEOUT_SECONDS`).
 
 The inbox applies backpressure at 1,000 queued records (plus in-flight work), leaving additional updates on Telegram until there is space. A transient attachment-download failure produces no outputs and keeps the message for a later run, with backoff. Other ready messages can proceed. After five failed download attempts, or a permanent file-download rejection, the attachment's message is skipped with a console warning. No partial text or chat ID is emitted for that failed message. Cancellation during downloading retains the message for when processing resumes. Downloading/decoding media still takes time; the background poller continues meanwhile.
 
@@ -160,7 +163,7 @@ Telegram advises avoiding more than one message per second **in a single chat** 
 
 The runtime requirements are **httpx, numpy, Pillow, and PyAV** (`av>=14.2.0`). Most of them (as well as Torch) come with ComfyUI. Use the requirements command above with ComfyUI's own Python, including `python_embeded\python.exe` for Portable. No separate Telegram Python SDK, web server, or configuration file is required. A lightweight background thread collects messages during operation.
 
-Use a current ComfyUI version with `ExecutionBlocker` support and a frontend offering Run (Instant). Python 3.12+ is recommended with a supported ComfyUI build.
+Use a current ComfyUI version with `ExecutionBlocker` support and a frontend offering **Run (Instant)**. Python 3.12+ is recommended with a supported ComfyUI build.
 
 ## ⚡️ How to set up a bot
 
@@ -207,6 +210,7 @@ If you are too lazy to build your own bot workflow, check out the one I made! It
 - **Multiple users can interact with the bot at the same time** without any errors or bugs. Though the bot cannot answer while generating something, so the messages are queued.
 
 Of course, you can expand upon those features if you figure out the workflow structure. I uploaded this mega-workflow and the bot demo to Civitai. Here is the link: ***(WORKFLOW LINK COMING SOON!)***
+
 Note that the workflow uses many different custom node packs. Most of them are widely used (like KJNodes or comfyui-easy-use) and have low requirements.
 
 The workflow also features [my other custom node pack](https://github.com/CoolBreeze164/ComfyUI-CoolB-Nodes) that I uploaded separately. It has some simple utility nodes that I designed specifically to create this bot workflow. Highly recommend it if you want to build your own advanced bot.
