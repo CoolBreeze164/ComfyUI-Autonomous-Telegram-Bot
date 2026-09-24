@@ -1,0 +1,8 @@
+# Torch comes with ComfyUI. PyAV is also a core ComfyUI dependency; list it
+# explicitly so requirements installs work on older/portable distributions.
+# PyAV wheels bundle media libraries; no ffmpeg executable on PATH is needed.
+# python-telegram-bot is unnecessary: both receiver and senders use httpx.
+httpx
+numpy
+pillow
+av>=14.2.0
