@@ -244,7 +244,7 @@ class SendVideo(SendGeneric):
 
         params[id] = f"attach://{id}"
 
-        with open(file_path, "rb") as f:
+        with utils.open_media_file(file_path) as f:
             message = bot(
                 f"send{send_as}",
                 params=params,
@@ -462,7 +462,7 @@ class EditMessageVideo(SendGeneric):
             }.items() if v is not None}
         }
 
-        with open(file_path, "rb") as f:
+        with utils.open_media_file(file_path) as f:
             files = {"media": (file_name, f.read(), utils.guess_mimetype(file_name))}
             message = bot("editMessageMedia", params=_params, files=files)
             return message, message["message_id"], trigger
