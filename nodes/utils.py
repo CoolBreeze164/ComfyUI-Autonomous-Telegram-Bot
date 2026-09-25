@@ -1,5 +1,6 @@
 """Media helpers and the original suite's Parse JSON node (MIT; see licenses/)."""
 
+import os
 import io
 import json
 import mimetypes
@@ -13,6 +14,111 @@ from .media import audio_from_bytes, convert_wav_bytes
 
 UINT64_MIN = -9223372036854775808
 UINT64_MAX = 9223372036854775807
+
+def _allowed_media_roots():
+    """
+    Return the resolved ComfyUI output/temp directories.
+
+    This fails closed if ComfyUI's folder_paths helper is unavailable or no
+    usable directories are configured.
+    """
+    try:
+        import folder_paths
+    except Exception as exc:
+        raise ValueError(
+            "ComfyUI folder_paths is unavailable; refusing to open media paths."
+        ) from exc
+
+    roots = []
+
+    for attr in ("get_output_directory", "get_temp_directory"):
+        getter = getattr(folder_paths, attr, None)
+        if not callable(getter):
+            continue
+
+        try:
+            root = getter()
+        except Exception:
+            continue
+
+        if root:
+            roots.append(Path(root))
+
+    resolved_roots = []
+
+    for root in roots:
+        try:
+            root = Path(root).expanduser()
+            root = Path(os.path.realpath(root))
+        except OSError:
+            continue
+
+        if root.is_dir():
+            resolved_roots.append(root)
+
+    # De-duplicate while preserving order.
+    unique_roots = []
+    for root in resolved_roots:
+        if root not in unique_roots:
+            unique_roots.append(root)
+
+    if not unique_roots:
+        raise ValueError(
+            "No usable ComfyUI output/temp directories are configured."
+        )
+
+    return unique_roots
+
+
+def validate_media_path(path):
+    """
+    Resolve the supplied path and require it to be inside one of the allowed
+    ComfyUI media roots.
+
+    This deliberately resolves symlinks with realpath before checking the path.
+    """
+    raw = str(path)
+
+    if not raw:
+        raise ValueError("The media path is empty.")
+
+    if "\x00" in raw:
+        raise ValueError("The media path contains an invalid NUL byte.")
+
+    try:
+        real = Path(os.path.realpath(Path(raw).expanduser()))
+    except OSError as exc:
+        raise ValueError("Could not resolve the media path.") from exc
+
+    real_norm = os.path.normcase(str(real))
+
+    for root in _allowed_media_roots():
+        root_norm = os.path.normcase(str(root))
+
+        try:
+            common = os.path.commonpath([real_norm, root_norm])
+        except ValueError:
+            # Different drives / incompatible paths.
+            continue
+
+        if common == root_norm:
+            if not real.is_file():
+                raise ValueError(
+                    "The media path must point to an existing regular file."
+                )
+
+            return str(real)
+
+    raise ValueError(
+        "Media paths must be inside the ComfyUI output or temp directories."
+    )
+
+
+def open_media_file(path):
+    """
+    Validate immediately before opening.
+    """
+    return open(validate_media_path(path), "rb")
 
 def cleanup_params(params):
     params = dict(params)
@@ -32,11 +138,15 @@ def media_basename(path):
 
 
 def video_file_path(video):
-    paths = [str(path) for path in video[1] if Path(path).suffix.lower() not in {".png", ".json"}]
+    paths = [
+        str(path)
+        for path in video[1]
+        if Path(str(path)).suffix.lower() not in {".png", ".json"}
+    ]
+
     if not paths:
         raise ValueError("The VHS_FILENAMES input contains no video file.")
-    return paths[-1]
-
+    return validate_media_path(paths[-1])
 
 def images_to_bytes(images, format="PNG"):
     encoded = []
