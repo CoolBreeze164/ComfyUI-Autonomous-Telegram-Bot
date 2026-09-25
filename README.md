@@ -48,7 +48,7 @@ Connect `chat_id` to all the senders in the workflow. If the bot is meant to rep
 **<details><summary>⚙️ Technical stuff**
 </summary>
 
-Photos use the largest available Telegram size. Images sent as documents are also accepted; EXIF orientation is applied and images are converted to RGB. Video/animation and audio/voice messages are supported, as are documents with image, video or audio MIME types. Unsupported service messages and update types are skipped. An incoming Telegram album is handled as separate messages, one item per workflow run. Edited incoming messages are not treated as new jobs.
+Photos use the largest available Telegram size. Images sent as documents are also accepted; EXIF orientation is applied and images are converted to RGB. Video/animation and audio/voice messages are supported, as are documents with image, video or audio MIME types. Unsupported service messages and update types are skipped. An incoming Telegram album is handled as separate messages, one item per workflow run. Edited incoming messages are not treated as new jobs. Received videos are written under ComfyUI's temporary directory in `ComfyUI/temp/telegram-autonomous`. They remain available to downstream nodes and follow your ComfyUI temporary-file cleanup policy.
 
 An absent media output is a **silent ExecutionBlocker**, so its dependent branch does not run. For example, a text-only message cannot produce a fake image for an image generation branch. Always connect the appropriate receiver output to the branch that should be conditional.
 
@@ -175,7 +175,7 @@ To do a simple test of the bot follow these steps:
 4. Select **Run (Instant)**, set the batch count to **1**, and click Run once.
 5. Open the bot in Telegram and send a message. As long as the workflow tab is opened and running, the bot should automatically reply to you with your own text message.
 
-If you have Krea-2 image generator downloaded, you can try the other example wokrflow `example_t2i_krea2.json`. It receives user's text message as a prompt and replies with an image based on that prompt.
+If you have Krea-2 image generator downloaded, you can try the other example workflow `example_t2i_krea2.json`. It receives user's text message as a prompt and replies with an image based on that prompt.
 
 ⚠️ **Important note.** Because the bot uses ComfyUI for simple HTTP calls, it does not connect to your installed Telegram app in any way and thus, cannot utilize its built-in protocols like MTProto or SOCKS for connection with Telegram servers. This means that if Telegram is **blocked in your country**, the bot will not be able to call the server. To bypass restrictions, I recommend using [Cloudflare's WARP](https://one.one.one.one/) (Traffic and DNS (UDP) or Traffic and DNS (HTTPS) modes) or a VPN.
 
@@ -194,8 +194,6 @@ To stop, disable **Run (Instant)** with its Stop control. Use ComfyUI's cancel/i
 A shared in-process inbox prevents competing `getUpdates` calls inside this pack, but cannot coordinate another ComfyUI process. Telegram polling and webhooks are mutually exclusive. If needed, call `deleteWebhook` with `drop_pending_updates=false` through API Method before starting the receiver. The receiver never deletes a webhook or discards Telegram's pending updates automatically.
 
 The inbox/cursor are in memory and survive consecutive runs and node-instance recreation within the same ComfyUI process. They are not a persistent job database. A process crash, restart, or failed downstream operation can lose a fetched-but-unprocessed item or replay an unacknowledged item. There is no exactly-once delivery guarantee across restarts.
-
-Received videos are written under ComfyUI's temporary directory in `ComfyUI/temp`. They remain available to downstream nodes and follow your ComfyUI temporary-file cleanup policy.
 
 Public Telegram file limits apply: downloads through `getFile` are currently limited to 20 MB. Unavailable/oversized files are logged and skipped, as described above. Local media decoding/conversion errors still need correction. See the [Telegram Bot API](https://core.telegram.org/bots/api#file).
 
