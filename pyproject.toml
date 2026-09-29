@@ -1,0 +1,13 @@
+[project]
+name = "ComfyUI-Autonomous-Telegram-Bot"
+description = "Create a fully autonomous Telegram bot inside a single ComfyUI workflow. Simply copy your bot_token, hit run and that's it! The pack features a unified user message receiver (uses Long Polling) and a rich collection of media senders. The nodes are designed for continuous operation of the workflow under the "Run (Instant)" queueing mode."
+version = "1.0.0"
+license = {file = "LICENSE"}
+
+[project.urls]
+Repository = "https://github.com/CoolBreeze164/ComfyUI-Autonomous-Telegram-Bot"
+
+[tool.comfy]
+PublisherId = "coolbreeze"
+DisplayName = "ComfyUI Autonomous Telegram Bot"
+Icon = "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/83/Telegram_2019_Logo.svg/250px-Telegram_2019_Logo.svg.png?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=thumbnail"
