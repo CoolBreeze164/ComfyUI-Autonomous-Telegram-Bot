@@ -207,7 +207,7 @@ If you are too lazy to build your own bot workflow, check out the one I made! It
 - **Independent persistent cache of chat data for every user**: saved image (for image-requiring functions), generation parameters set by the user (aspect ratio, video duration and workflow state are saved in special config files) and LLM chat history. All of this data is saved independently for different users that interact with the bot (based on their ChatID), thus, excluding any possibility of potential data sharing between them.
 - **Multiple users can interact with the bot at the same time** without any errors or bugs. Though the bot cannot answer while generating something, so the messages are queued.
 
-Of course, you can expand upon those features if you figure out the workflow structure. I uploaded this mega-workflow and the bot demo to Civitai. Here is the link: ***(WORKFLOW LINK COMING SOON!)***
+Of course, you can expand upon those features if you figure out the workflow structure. I uploaded this mega-workflow and the bot showcase demo to Civitai. Here is the link: https://civitai.com/models/2840838/telegram-bot-in-comfyui
 
 Note that the workflow uses many different custom node packs. Most of them are widely used (like KJNodes or comfyui-easy-use) and have low requirements.
 
